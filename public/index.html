@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yousign Signature Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    form { margin-bottom: 2em; }
+    label { display: block; margin-top: 1em; }
+    #statusMessage { margin-top: 1em; font-weight: bold; color: green; }
+  </style>
+</head>
+<body>
+  <h1>Yousign Signature Demo</h1>
+  <form id="signatureForm">
+    <label>First Name: <input type="text" name="first_name" required></label>
+    <label>Last Name: <input type="text" name="last_name" required></label>
+    <label>Email: <input type="email" name="email" required></label>
+    <button type="submit">Start Signature</button>
+  </form>
+  <div id="iframeContainer"></div>
+  <div id="statusMessage"></div>
+  <script>
+    let signatureRequestId = null;
+    let pollingInterval = null;
+
+    async function pollSignatureStatus() {
+      if (!signatureRequestId) return;
+      const res = await fetch(`/api/signature-status/${signatureRequestId}`);
+      const result = await res.json();
+      if (result.status === 'done' || (result.signers && result.signers.some(s => s.status === 'signed'))) {
+        document.getElementById('statusMessage').textContent = '✅ Le document a été signé !';
+        clearInterval(pollingInterval);
+      } else {
+        document.getElementById('statusMessage').textContent = 'En attente de signature...';
+      }
+    }
+
+    document.getElementById('signatureForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      document.getElementById('statusMessage').textContent = '';
+      const form = e.target;
+      const data = {
+        first_name: form.first_name.value,
+        last_name: form.last_name.value,
+        email: form.email.value
+      };
+      const res = await fetch('/api/start-signature', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (!result.iframeUrl) {
+        document.getElementById('iframeContainer').innerHTML = `<p style='color:red;'>${result.error || 'Error'}</p>`;
+      } else {
+        document.getElementById('iframeContainer').innerHTML = '';
+      }
+      signatureRequestId = result.signatureRequestId;
+      if (signatureRequestId) {
+        pollingInterval = setInterval(pollSignatureStatus, 5000);
+        pollSignatureStatus(); // check immediately
+      }
+    });
+  </script>
+</body>
+</html> 
