@@ -95,9 +95,14 @@
       <input type="text" name="last_name" placeholder="Last Name" required />
       <button type="submit">Send for Signature</button>
     </form>
+    <div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,59,0.45); z-index:1000; align-items:center; justify-content:center;">
+      <div id="afterSubmitModal" style="background:#fff; border-radius:18px; box-shadow:0 4px 24px rgba(0,0,0,0.12); padding:2.5em 2em 2em 2em; max-width:350px; width:90%; display:flex; flex-direction:column; align-items:center;">
+        <svg width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#2563eb"/><path d="M16 24a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V24Z" fill="#fff"/><path d="M20 24h24v.01L32 36 20 24.01V24Z" fill="#2563eb"/></svg>
+        <p style="margin: 1.5em 0 1em 0; color: #22223b; font-size: 1.1em; font-weight: 500;">Un email vous a été envoyé, signez le document reçu.<br>Une fois signé, cliquez sur continuer.</p>
+        <button id="ctaBtn" class="cta-btn" disabled style="margin-top:1em;">J'ai signé, je commence le test</button>
+      </div>
+    </div>
     <div id="iframeContainer"></div>
-    <div id="emailInstruction" style="display:none;"></div>
-    <button id="ctaBtn" class="cta-btn" style="display:none;" disabled>Commencer</button>
     <div id="statusMessage"></div>
   </div>
   <script>
@@ -122,36 +127,22 @@
 
     document.getElementById('signatureForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      document.getElementById('statusMessage').textContent = '';
-      document.getElementById('emailInstruction').style.display = 'block';
-      document.getElementById('emailInstruction').textContent = 'Merci ! Veuillez vérifier votre boîte mail et signer le document pour continuer.';
-      const ctaBtn = document.getElementById('ctaBtn');
-      ctaBtn.style.display = 'block';
-      ctaBtn.disabled = true;
-      ctaBtn.textContent = 'Commencer';
-      ctaBtn.style.opacity = 0.5;
+      // Show the modal overlay
+      document.getElementById('modalOverlay').style.display = 'flex';
+      // Optionally, visually dim/disable the form
+      document.getElementById('signatureForm').style.opacity = 0.5;
+      document.getElementById('signatureForm').style.pointerEvents = 'none';
       const form = e.target;
       const data = {
         first_name: form.first_name.value,
         last_name: form.last_name.value,
         email: form.email.value
       };
-      const res = await fetch('/api/start-signature', {
+      await fetch('/api/start-signature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      const result = await res.json();
-      if (!result.iframeUrl) {
-        document.getElementById('iframeContainer').innerHTML = `<p style='color:red;'>${result.error || 'Error'}</p>`;
-      } else {
-        document.getElementById('iframeContainer').innerHTML = '';
-      }
-      signatureRequestId = result.signatureRequestId;
-      if (signatureRequestId) {
-        pollingInterval = setInterval(pollSignatureStatus, 5000);
-        pollSignatureStatus(); // check immediately
-      }
     });
   </script>
 </body>
