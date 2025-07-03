@@ -24,10 +24,10 @@ export default async function handler(req, res) {
     console.log('Parsed req.body:', body);
   }
 
-  // Extract the signature request ID and status/event
-  const signatureRequestId = body?.data?.id || body?.data?.signature_request_id || body?.signature_request_id || body?.id;
-  const status = body?.data?.status || body?.status || null;
-  const event = body?.event || null;
+  // Correct extraction for Yousign webhook payload
+  const signatureRequestId = body?.data?.signature_request?.id;
+  const status = body?.data?.signature_request?.status;
+  const event = body?.event_name || body?.event || null;
 
   console.log('Extracted signatureRequestId:', signatureRequestId, 'status:', status, 'event:', event);
 
@@ -45,9 +45,9 @@ export default async function handler(req, res) {
     return;
   }
 
-  // Store the status/event in Redis
+  // Store the status/event and full raw payload in Redis
   const redisKey = `signature-status:${signatureRequestId}`;
-  const value = JSON.stringify({ status, event, updatedAt: Date.now() });
+  const value = JSON.stringify({ status, event, updatedAt: Date.now(), raw: body });
 
   try {
     const redisResponse = await fetch(`${UPSTASH_REDIS_REST_URL}/set/${redisKey}/${encodeURIComponent(value)}`, {
