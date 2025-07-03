@@ -111,25 +111,20 @@
 
     async function pollSignatureStatus() {
       if (!signatureRequestId) return;
-      const res = await fetch(`/api/signature-status/${signatureRequestId}`);
+      const res = await fetch(`/api/signature-status?id=${signatureRequestId}`);
       const result = await res.json();
       if (result.status === 'done' || (result.signers && result.signers.some(s => s.status === 'signed'))) {
-        document.getElementById('statusMessage').textContent = '✅ Le document a été signé !';
         const ctaBtn = document.getElementById('ctaBtn');
         ctaBtn.disabled = false;
-        ctaBtn.textContent = 'Commencer';
         ctaBtn.style.opacity = 1;
+        ctaBtn.textContent = "Commencer le test";
         clearInterval(pollingInterval);
-      } else {
-        document.getElementById('statusMessage').textContent = 'En attente de signature...';
       }
     }
 
     document.getElementById('signatureForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      // Show the modal overlay
       document.getElementById('modalOverlay').style.display = 'flex';
-      // Optionally, visually dim/disable the form
       document.getElementById('signatureForm').style.opacity = 0.5;
       document.getElementById('signatureForm').style.pointerEvents = 'none';
       const form = e.target;
@@ -138,11 +133,20 @@
         last_name: form.last_name.value,
         email: form.email.value
       };
-      await fetch('/api/start-signature', {
+      const res = await fetch('/api/start-signature', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
+      const result = await res.json();
+      if (result.error) {
+        console.error("Error starting signature:", result.error);
+        return;
+      }
+      signatureRequestId = result.signatureRequestId;
+      if (signatureRequestId) {
+        pollingInterval = setInterval(pollSignatureStatus, 5000);
+      }
     });
   </script>
 </body>

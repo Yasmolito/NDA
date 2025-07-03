@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import FormData from 'form-data';
 
-const apiBaseUrl = 'https://api-sandbox.yousign.app/v3';
+const apiBaseUrl = 'https://api-sandbox.yousign.com/v3';
 const apiKey = process.env.YOUSIGN_API_KEY;
 
 export default async function handler(req, res) {
