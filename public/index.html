@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yousign Signature Demo</title>
+  <title>Veuillez signer l'accord de non divulgation</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {
@@ -88,61 +88,62 @@
 </head>
 <body>
   <div class="container">
-    <h1>Yousign Signature Request</h1>
+    <h1>Veuillez signer l'accord de non divulgation</h1>
     <form id="signatureForm">
-      <input type="email" name="email" placeholder="User Email" required />
-      <input type="text" name="first_name" placeholder="First Name" required />
-      <input type="text" name="last_name" placeholder="Last Name" required />
-      <button type="submit">Send for Signature</button>
+      <input type="email" name="email" placeholder="Adresse e-mail" required />
+      <input type="text" name="first_name" placeholder="Prénom" required />
+      <input type="text" name="last_name" placeholder="Nom" required />
+      <button type="submit">Valider</button>
     </form>
+    <div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,59,0.45); z-index:1000; align-items:center; justify-content:center;">
+      <div id="afterSubmitModal" style="background:#fff; border-radius:18px; box-shadow:0 4px 24px rgba(0,0,0,0.12); padding:2.5em 2em 2em 2em; max-width:350px; width:90%; display:flex; flex-direction:column; align-items:center;">
+        <svg width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#2563eb"/><path d="M16 24a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V24Z" fill="#fff"/><path d="M20 24h24v.01L32 36 20 24.01V24Z" fill="#2563eb"/></svg>
+        <p id="modalMessage" style="margin: 1.5em 0 1em 0; color: #22223b; font-size: 1.1em; font-weight: 500;"></p>
+        <button id="ctaBtn" class="cta-btn" disabled style="margin-top:1em;">Commencer le test</button>
+      </div>
+    </div>
     <div id="iframeContainer"></div>
     <div id="statusMessage"></div>
   </div>
   <script>
     let signatureRequestId = null;
     let pollingInterval = null;
-
-    async function fetchAuditTrail(signatureRequestId, signerId) {
-      const res = await fetch(`/api/audit-trail?signatureRequestId=${signatureRequestId}&signerId=${signerId}`);
-      const auditTrail = await res.json();
-      console.log('Audit trail:', auditTrail);
-      // You can add further UI logic here if needed
-    }
+    let userEmail = '';
 
     async function pollSignatureStatus() {
       if (!signatureRequestId) return;
       const res = await fetch(`/api/signature-status?id=${signatureRequestId}`);
       const result = await res.json();
-      console.log('Polling result:', result); // Debug log
-
-      // If result.value is a string, parse it
       let data = result;
       if (typeof result.value === 'string') {
         try {
           data = JSON.parse(result.value);
         } catch (e) {
-          console.error('Failed to parse result.value:', result.value);
+          console.error('Erreur lors de l\'analyse du statut:', result.value);
         }
       }
-
       if (data.status === 'done' || data.signerStatus === 'signed' || data.event === 'signature_request.done') {
         const ctaBtn = document.getElementById('ctaBtn');
         ctaBtn.disabled = false;
         ctaBtn.style.opacity = 1;
         ctaBtn.textContent = "Commencer le test";
         clearInterval(pollingInterval);
-        document.getElementById('statusMessage').textContent = "merci d'avoir signé le document";
+        document.getElementById('statusMessage').textContent = "Merci d'avoir signé le document.";
       }
     }
 
     document.getElementById('signatureForm').addEventListener('submit', async function(e) {
       e.preventDefault();
-      // Instead of showing the modal, redirect to a new page
       const form = e.target;
+      userEmail = form.email.value;
+      document.getElementById('modalOverlay').style.display = 'flex';
+      document.getElementById('signatureForm').style.opacity = 0.5;
+      document.getElementById('signatureForm').style.pointerEvents = 'none';
+      document.getElementById('modalMessage').textContent = `Nous vous avons envoyé un lien de signature Yousign à l'adresse e-mail ${userEmail}, veuillez signer le document pour commencer le test.`;
       const data = {
         first_name: form.first_name.value,
         last_name: form.last_name.value,
-        email: form.email.value
+        email: userEmail
       };
       const res = await fetch('/api/start-signature', {
         method: 'POST',
@@ -151,15 +152,19 @@
       });
       const result = await res.json();
       if (result.error) {
-        console.error("Error starting signature:", result.error);
+        console.error("Erreur lors de l'envoi pour signature:", result.error);
         return;
       }
-      // Store the signatureRequestId in sessionStorage for use on the next page
-      if (result.signatureRequestId) {
-        sessionStorage.setItem('signatureRequestId', result.signatureRequestId);
+      signatureRequestId = result.signatureRequestId;
+      if (signatureRequestId) {
+        pollingInterval = setInterval(pollSignatureStatus, 5000);
       }
-      // Redirect to the new page
-      window.location.href = 'after-signature.html';
+    });
+
+    document.getElementById('ctaBtn').addEventListener('click', function() {
+      if (!this.disabled) {
+        window.location.href = 'https://app.maze.co/maze-preview/mazes/399595095';
+      }
     });
   </script>
   <!-- Maze snippet start -->
