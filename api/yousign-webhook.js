@@ -1,19 +1,23 @@
-import fs from 'fs';
-import path from 'path';
+import { MongoClient } from 'mongodb';
 
-const STATUS_FILE = path.resolve(process.cwd(), 'signature-status.json');
+const uri = process.env.MONGODB_URI;
+const dbName = 'nda';
+const collectionName = 'signature_status';
 
-function readStatuses() {
+async function upsertSignatureStatus(signatureRequestId, statusObj) {
+  const client = new MongoClient(uri);
   try {
-    const data = fs.readFileSync(STATUS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (e) {
-    return {};
+    await client.connect();
+    const db = client.db(dbName);
+    const collection = db.collection(collectionName);
+    await collection.updateOne(
+      { _id: signatureRequestId },
+      { $set: { ...statusObj, _id: signatureRequestId } },
+      { upsert: true }
+    );
+  } finally {
+    await client.close();
   }
-}
-
-function writeStatuses(statuses) {
-  fs.writeFileSync(STATUS_FILE, JSON.stringify(statuses, null, 2), 'utf8');
 }
 
 export default async function handler(req, res) {
@@ -27,15 +31,13 @@ export default async function handler(req, res) {
     const status = data?.signature_request?.status;
     const signerStatus = data?.signer?.status;
     if (signatureRequestId) {
-      const statuses = readStatuses();
-      statuses[signatureRequestId] = {
+      await upsertSignatureStatus(signatureRequestId, {
         status,
         event: event_name,
         signerStatus,
         updatedAt: Date.now(),
         raw: req.body
-      };
-      writeStatuses(statuses);
+      });
     }
   } catch (e) {
     console.error('Error processing webhook:', e);
@@ -43,7 +45,14 @@ export default async function handler(req, res) {
   res.status(200).send('OK');
 }
 
-export function getSignatureStatus(id) {
-  const statuses = readStatuses();
-  return statuses[id];
+export async function getSignatureStatus(id) {
+  const client = new MongoClient(uri);
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    const collection = db.collection(collectionName);
+    return await collection.findOne({ _id: id });
+  } finally {
+    await client.close();
+  }
 } 
