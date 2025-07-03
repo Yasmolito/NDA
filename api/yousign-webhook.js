@@ -1,3 +1,4 @@
+// trigger redeploy
 const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
 const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -49,4 +50,4 @@ export async function getSignatureStatus(id) {
   const data = await resp.json();
   if (!data.result) return null;
   return JSON.parse(data.result);
-} // trigger redeploy
+}
