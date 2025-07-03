@@ -1,19 +1,27 @@
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
   const { id } = req.query;
-  if (!id) return res.status(400).json({ error: 'Missing id' });
+  if (!id) {
+    res.status(400).json({ error: 'Missing id' });
+    return;
+  }
 
-  // Inline Redis fetch logic
-  const resp = await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/get/signature:${id}`,
-    {
+  const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
+  const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const redisKey = `signature-status:${id}`;
+
+  try {
+    const response = await fetch(`${UPSTASH_REDIS_REST_URL}/get/${redisKey}`, {
       headers: {
-        Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
-      }
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+      },
+    });
+    const data = await response.json();
+    if (!data.result) {
+      res.status(404).json({ status: 'unknown' });
+      return;
     }
-  );
-  const data = await resp.json();
-  if (!data.result) return res.status(404).json({ status: 'unknown' });
-  res.json(JSON.parse(data.result));
+    res.status(200).json(JSON.parse(data.result));
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch from Redis', details: err.message });
+  }
 } 
