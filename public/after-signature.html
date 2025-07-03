@@ -96,6 +96,12 @@
       if (signatureRequestId) {
         pollingInterval = setInterval(pollSignatureStatus, 5000);
       }
+      // Add click handler for CTA
+      document.getElementById('ctaBtn').addEventListener('click', function() {
+        if (!this.disabled) {
+          window.location.href = 'merci.html';
+        }
+      });
     };
   </script>
 </body>
