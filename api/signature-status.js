@@ -1,4 +1,4 @@
-import { signatureStatuses } from './yousign-webhook';
+import { getSignatureStatus } from './yousign-webhook';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
   const { id } = req.query;
   if (!id) return res.status(400).json({ error: 'Missing id' });
-  const status = signatureStatuses[id];
+  const status = getSignatureStatus(id);
   if (!status) return res.status(404).json({ status: 'unknown' });
   res.json(status);
 } 
