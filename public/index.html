@@ -109,16 +109,29 @@
     let signatureRequestId = null;
     let pollingInterval = null;
 
+    async function fetchAuditTrail(signatureRequestId, signerId) {
+      const res = await fetch(`/api/audit-trail?signatureRequestId=${signatureRequestId}&signerId=${signerId}`);
+      const auditTrail = await res.json();
+      console.log('Audit trail:', auditTrail);
+      // You can add further UI logic here if needed
+    }
+
     async function pollSignatureStatus() {
       if (!signatureRequestId) return;
       const res = await fetch(`/api/signature-status?id=${signatureRequestId}`);
       const result = await res.json();
-      if (result.status === 'done' || (result.signers && result.signers.some(s => s.status === 'signed'))) {
+      console.log('Polling result:', result); // Debug log
+      // Check for new format: status and signerStatus
+      if (result.status === 'done' || result.signerStatus === 'signed') {
         const ctaBtn = document.getElementById('ctaBtn');
         ctaBtn.disabled = false;
         ctaBtn.style.opacity = 1;
         ctaBtn.textContent = "Commencer le test";
         clearInterval(pollingInterval);
+        // Optionally, fetch audit trail if you have signerId
+        // if (result.signerId) {
+        //   fetchAuditTrail(signatureRequestId, result.signerId);
+        // }
       }
     }
 
