@@ -121,19 +121,24 @@
       const res = await fetch(`/api/signature-status?id=${signatureRequestId}`);
       const result = await res.json();
       console.log('Polling result:', result); // Debug log
-      // Check for new format: status and signerStatus
-      if (result.status === 'done' || result.signerStatus === 'signed') {
+
+      // If result.value is a string, parse it
+      let data = result;
+      if (typeof result.value === 'string') {
+        try {
+          data = JSON.parse(result.value);
+        } catch (e) {
+          console.error('Failed to parse result.value:', result.value);
+        }
+      }
+
+      if (data.status === 'done' || data.signerStatus === 'signed' || data.event === 'signature_request.done') {
         const ctaBtn = document.getElementById('ctaBtn');
         ctaBtn.disabled = false;
         ctaBtn.style.opacity = 1;
         ctaBtn.textContent = "Commencer le test";
         clearInterval(pollingInterval);
-        // Show thank you message
         document.getElementById('statusMessage').textContent = "merci d'avoir signé le document";
-        // Optionally, fetch audit trail if you have signerId
-        // if (result.signerId) {
-        //   fetchAuditTrail(signatureRequestId, result.signerId);
-        // }
       }
     }
 
