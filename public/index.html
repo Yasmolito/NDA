@@ -43,7 +43,7 @@
       color: #22223b;
       margin-bottom: 2em;
       margin-top: 0.5em;
-      text-align: center;
+      text-align: left;
     }
     .intro-text {
       font-size: 1.05em;
@@ -174,7 +174,9 @@
     </form>
     <div id="modalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(34,34,59,0.45); z-index:1000; align-items:center; justify-content:center;">
       <div id="afterSubmitModal" style="background:#fff; border-radius:18px; box-shadow:0 4px 24px rgba(0,0,0,0.12); padding:2.5em 2em 2em 2em; max-width:350px; width:90%; display:flex; flex-direction:column; align-items:center;">
-        <svg width="64" height="64" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#2563eb"/><path d="M16 24a4 4 0 0 1 4-4h24a4 4 0 0 1 4 4v16a4 4 0 0 1-4 4H20a4 4 0 0 1-4-4V24Z" fill="#fff"/><path d="M20 24h24v.01L32 36 20 24.01V24Z" fill="#2563eb"/></svg>
+        <div class="icon-circle">
+          <svg width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="32" fill="#e6f0fb"/><path d="M32 20a2 2 0 0 1 2 2v2h6a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H24a2 2 0 0 1-2-2V26a2 2 0 0 1 2-2h6v-2a2 2 0 0 1 2-2Zm8 6H24v16h16V26Zm-8-4a.5.5 0 0 0-.5.5V24h1v-1.5A.5.5 0 0 0 32 22Z" fill="#2563eb"/></svg>
+        </div>
         <p id="modalMessage" style="margin: 1.5em 0 1em 0; color: #22223b; font-size: 1.1em; font-weight: 500;"></p>
         <button id="ctaBtn" class="cta-btn" disabled style="margin-top:1em;">Commencer le test</button>
       </div>
