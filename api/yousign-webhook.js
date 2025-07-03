@@ -49,4 +49,4 @@ export async function getSignatureStatus(id) {
   const data = await resp.json();
   if (!data.result) return null;
   return JSON.parse(data.result);
-} 
+} // trigger redeploy
