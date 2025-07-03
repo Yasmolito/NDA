@@ -4,22 +4,32 @@ export default async function handler(req, res) {
     return;
   }
 
-  console.log('Webhook received:', req.body);
-
-  // Parse the webhook payload
   let body = req.body;
-  if (!body) {
+  // If body is empty, parse from raw stream
+  if (!body || Object.keys(body).length === 0) {
     try {
-      body = JSON.parse(req.body);
+      const buffers = [];
+      for await (const chunk of req) {
+        buffers.push(chunk);
+      }
+      const rawBody = Buffer.concat(buffers).toString();
+      body = JSON.parse(rawBody);
+      console.log('Parsed raw body:', body);
     } catch (e) {
-      body = req.body;
+      console.error('Failed to parse raw body:', e);
+      res.status(400).json({ error: 'Invalid JSON' });
+      return;
     }
+  } else {
+    console.log('Parsed req.body:', body);
   }
 
   // Extract the signature request ID and status/event
   const signatureRequestId = body?.data?.id || body?.data?.signature_request_id || body?.signature_request_id || body?.id;
   const status = body?.data?.status || body?.status || null;
   const event = body?.event || null;
+
+  console.log('Extracted signatureRequestId:', signatureRequestId, 'status:', status, 'event:', event);
 
   if (!signatureRequestId) {
     res.status(400).json({ error: 'Missing signature request ID' });
@@ -50,6 +60,7 @@ export default async function handler(req, res) {
     console.log('Redis write response:', redisResponse.status, redisResponse.statusText);
     res.status(200).json({ ok: true });
   } catch (err) {
+    console.error('Failed to update Redis:', err);
     res.status(500).json({ error: 'Failed to update Redis', details: err.message });
   }
 } 
