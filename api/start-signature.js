@@ -100,14 +100,16 @@ export default async function handler(req, res) {
     });
     const activateResp = await response.json();
     console.log('Activation response:', activateResp);
-    if (activateResp.error) {
-      console.error('Failed to activate signature request:', activateResp);
-      return res.status(500).json({ error: 'Failed to activate signature request', details: activateResp });
+
+    // Try to get signature link from activation response
+    let signatureLink = activateResp.signers?.[0]?.signature_link || null;
+    if (signatureLink) {
+      console.log('Signature link found in activation response:', signatureLink);
+      return res.status(200).json({ iframeUrl: signatureLink, signatureRequestId: signatureRequest.id });
     }
 
-    // 5. Poll for signature_link in the signers array (up to 10 attempts, 3s apart)
-    let signatureLink = null;
-    const maxAttempts = 10;
+    // 5. Poll for signature_link in the signers array (up to 20 attempts, 5s apart)
+    const maxAttempts = 20;
     const delay = ms => new Promise(res => setTimeout(res, ms));
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -119,17 +121,15 @@ export default async function handler(req, res) {
       const sigReqDetails = await response.json();
       console.log(`Polling attempt ${attempt + 1}:`, sigReqDetails);
       signatureLink = sigReqDetails.signers?.[0]?.signature_link;
-      if (signatureLink) break;
-      await delay(3000); // wait 3 seconds before next attempt
+      if (signatureLink) {
+        console.log('Signature link found during polling:', signatureLink);
+        return res.status(200).json({ iframeUrl: signatureLink, signatureRequestId: signatureRequest.id });
+      }
+      await delay(5000); // wait 5 seconds before next attempt
     }
 
-    if (!signatureLink) {
-      console.error('Failed to get signature link after polling for request:', signatureRequest.id);
-      return res.status(500).json({ error: 'Failed to get signature link after polling.' });
-    }
-
-    console.log('Signature link found:', signatureLink);
-    res.status(200).json({ iframeUrl: signatureLink, signatureRequestId: signatureRequest.id });
+    console.error('Failed to get signature link after polling for request:', signatureRequest.id);
+    return res.status(500).json({ error: 'Failed to get signature link after polling.' });
   } catch (err) {
     console.error('Error in start-signature:', err);
     res.status(500).json({ error: err.message });
