@@ -1,23 +1,17 @@
-import { MongoClient } from 'mongodb';
+const UPSTASH_REDIS_REST_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_REDIS_REST_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
-const uri = process.env.MONGODB_URI;
-const dbName = 'nda';
-const collectionName = 'signature_status';
-
-async function upsertSignatureStatus(signatureRequestId, statusObj) {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(collectionName);
-    await collection.updateOne(
-      { _id: signatureRequestId },
-      { $set: { ...statusObj, _id: signatureRequestId } },
-      { upsert: true }
-    );
-  } finally {
-    await client.close();
-  }
+async function setSignatureStatus(signatureRequestId, statusObj) {
+  await fetch(`${UPSTASH_REDIS_REST_URL}/set/signature:${signatureRequestId}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ value: JSON.stringify(statusObj) })
+    }
+  );
 }
 
 export default async function handler(req, res) {
@@ -31,13 +25,14 @@ export default async function handler(req, res) {
     const status = data?.signature_request?.status;
     const signerStatus = data?.signer?.status;
     if (signatureRequestId) {
-      await upsertSignatureStatus(signatureRequestId, {
+      await setSignatureStatus(signatureRequestId, {
         status,
         event: event_name,
         signerStatus,
         updatedAt: Date.now(),
         raw: req.body
       });
+      console.log('Upstash: set status for', signatureRequestId);
     }
   } catch (e) {
     console.error('Error processing webhook:', e);
@@ -46,13 +41,14 @@ export default async function handler(req, res) {
 }
 
 export async function getSignatureStatus(id) {
-  const client = new MongoClient(uri);
-  try {
-    await client.connect();
-    const db = client.db(dbName);
-    const collection = db.collection(collectionName);
-    return await collection.findOne({ _id: id });
-  } finally {
-    await client.close();
-  }
+  const resp = await fetch(`${UPSTASH_REDIS_REST_URL}/get/signature:${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
+      }
+    }
+  );
+  const data = await resp.json();
+  if (!data.result) return null;
+  return JSON.parse(data.result);
 } 
