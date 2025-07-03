@@ -128,6 +128,8 @@
         ctaBtn.style.opacity = 1;
         ctaBtn.textContent = "Commencer le test";
         clearInterval(pollingInterval);
+        // Show thank you message
+        document.getElementById('statusMessage').textContent = "merci d'avoir signé le document";
         // Optionally, fetch audit trail if you have signerId
         // if (result.signerId) {
         //   fetchAuditTrail(signatureRequestId, result.signerId);
@@ -160,6 +162,10 @@
       if (signatureRequestId) {
         pollingInterval = setInterval(pollSignatureStatus, 5000);
       }
+      console.log('Signature request:', result);
+      console.log('Document upload:', result.document);
+      console.log('Signer:', result.signer);
+      console.log('Signature request details:', result.sigReqDetails);
     });
   </script>
 </body>
