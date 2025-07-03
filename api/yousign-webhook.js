@@ -1,10 +1,10 @@
-import { NextResponse } from 'next/server';
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
     return;
   }
+
+  console.log('Webhook received:', req.body);
 
   // Parse the webhook payload
   let body = req.body;
@@ -40,13 +40,14 @@ export default async function handler(req, res) {
   const value = JSON.stringify({ status, event, updatedAt: Date.now() });
 
   try {
-    await fetch(`${UPSTASH_REDIS_REST_URL}/set/${redisKey}/${encodeURIComponent(value)}`, {
+    const redisResponse = await fetch(`${UPSTASH_REDIS_REST_URL}/set/${redisKey}/${encodeURIComponent(value)}`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
         'Content-Type': 'application/json',
       },
     });
+    console.log('Redis write response:', redisResponse.status, redisResponse.statusText);
     res.status(200).json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update Redis', details: err.message });
