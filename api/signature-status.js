@@ -1,4 +1,4 @@
-import { getSignatureStatus } from './yousign-webhook';
+import { getSignatureStatus } from './yousignWebhook';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
