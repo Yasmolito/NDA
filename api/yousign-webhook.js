@@ -41,13 +41,11 @@ export default async function handler(req, res) {
 }
 
 export async function getSignatureStatus(id) {
-  const resp = await fetch(`${UPSTASH_REDIS_REST_URL}/get/signature:${id}`,
-    {
-      headers: {
-        Authorization: `Bearer ${UPSTASH_REDIS_REST_TOKEN}`,
-      }
+  const resp = await fetch(`${process.env.UPSTASH_REDIS_REST_URL}/get/signature:${id}`, {
+    headers: {
+      Authorization: `Bearer ${process.env.UPSTASH_REDIS_REST_TOKEN}`,
     }
-  );
+  });
   const data = await resp.json();
   if (!data.result) return null;
   return JSON.parse(data.result);
